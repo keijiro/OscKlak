@@ -100,9 +100,6 @@ namespace Klak.Osc
                 // update the target value for the interpolator
                 _value.targetValue =
                     BasicMath.Lerp(_outputValue0, _outputValue1, inputValue);
-                // invoke the event in direct mode
-                if (!_interpolator.enabled)
-                    _valueEvent.Invoke(_value.Step());
             }
 
             _lastInputValue = inputValue;
@@ -129,7 +126,7 @@ namespace Klak.Osc
 
         void Update()
         {
-            if (_eventType == EventType.Value &&_interpolator.enabled)
+            if (_eventType == EventType.Value)
                 _valueEvent.Invoke(_value.Step());
         }
 

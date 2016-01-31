@@ -33,24 +33,31 @@ namespace Klak.Osc
     {
         #region Public Properties And Methods
 
-        public OscParser.ReceiveDataDelegate receiveDataDelegate {
-            get { return _osc.receiveDataDelegate; }
-            set { _osc.receiveDataDelegate = value; }
+        public OscCore.MessageDelegate messageDelegate {
+            get { return _parser.messageDelegate; }
+            set { _parser.messageDelegate = value; }
         }
 
         public OscServer(int listenPort)
         {
             _socket = new Socket(
                 AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
+            // On some platforms, it's not possible to cancel Receive() by
+            // just calling Close() -- it'll block the thread forever!
+            // Therefore, we heve to set timeout to break ServerLoop.
+            _socket.ReceiveTimeout = 100;
+
             _socket.Bind(new IPEndPoint(IPAddress.Any, listenPort));
 
             _buffer = new byte[65536];
-            _osc = new OscParser();
+            _parser = new OscParser();
         }
 
         public void Start()
         {
-            if (_thread == null) {
+            if (_thread == null && !_disposed)
+            {
                 _thread = new Thread(ServerLoop);
                 _thread.Start();
             }
@@ -59,43 +66,38 @@ namespace Klak.Osc
         public void Dispose()
         {
             if (_disposed) return;
+            _disposed = true;
 
-            var sock = _socket;
-            _socket = null;
-
-            sock.Shutdown(SocketShutdown.Receive);
-            sock.Close();
+            _socket.Shutdown(SocketShutdown.Receive);
+            _socket.Close();
 
             _thread.Join();
-            _thread = null;
-
-            _buffer = null;
-
-            _disposed = true;
         }
 
         #endregion
 
         #region Private Objects And Methods
 
+        bool _disposed;
+
         Socket _socket;
         Thread _thread;
 
-        OscParser _osc;
+        OscParser _parser;
         byte[] _buffer;
-
-        bool _disposed;
 
         void ServerLoop()
         {
-            while (_socket != null && !_disposed)
+            while (!_disposed)
             {
                 try {
                     int dataRead = _socket.Receive(_buffer);
-                    lock (_osc) _osc.FeedData(_buffer);
+                    if (!_disposed && dataRead > 0)
+                        lock (_parser)
+                            _parser.ProcessPacket(_buffer, dataRead);
                 }
                 catch (SocketException) {
-                    // It might exited by a timeout, so do nothing.
+                    // It might exited by timeout. Nothing to do.
                 }
             }
         }

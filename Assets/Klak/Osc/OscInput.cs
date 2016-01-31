@@ -87,7 +87,7 @@ namespace Klak.Osc
             return BasicMath.Lerp(_outputValue0, _outputValue1, p);
         }
 
-        void OnReceiveData(string path, float data)
+        void OnProcessMessage(string path, float data)
         {
             if (path != _path) return;
             UpdateState(data);
@@ -114,12 +114,12 @@ namespace Klak.Osc
 
         void OnEnable()
         {
-            OscMaster.receiveDataDelegate += OnReceiveData;
+            OscMaster.messageDelegate += OnProcessMessage;
         }
 
         void OnDisable()
         {
-            OscMaster.receiveDataDelegate -= OnReceiveData;
+            OscMaster.messageDelegate -= OnProcessMessage;
         }
 
         void Start()

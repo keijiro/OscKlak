@@ -25,12 +25,22 @@ using System;
 
 namespace Klak.Osc
 {
+    /// OSC master handler
     public static class OscMaster
     {
-        public static OscParser.ReceiveDataDelegate receiveDataDelegate {
-            get { return ServerInstance.receiveDataDelegate; }
-            set { ServerInstance.receiveDataDelegate = value; }
+        #region Public Members
+
+        /// OSC message master delegate
+        /// All incoming messages are handled with this delegate.
+        public static OscCore.MessageDelegate messageDelegate
+        {
+            get { return ServerInstance.messageDelegate; }
+            set { ServerInstance.messageDelegate = value; }
         }
+
+        #endregion
+
+        #region Private Members
 
         static OscServer _server;
 
@@ -43,5 +53,7 @@ namespace Klak.Osc
                 return _server;
             }
         }
+
+        #endregion
     }
 }

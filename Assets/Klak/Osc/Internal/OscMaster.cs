@@ -30,12 +30,8 @@ namespace Klak.Osc
     {
         #region Public Members
 
-        /// OSC message master delegate
-        /// All incoming messages are handled with this delegate.
-        public static OscCore.MessageDelegate messageDelegate
-        {
-            get { return ServerInstance.messageDelegate; }
-            set { ServerInstance.messageDelegate = value; }
+        public static MessageHandler messageHandler {
+            get { return ServerInstance.messageHandler; }
         }
 
         #endregion

@@ -42,28 +42,28 @@ namespace Klak.Osc
         void OnEnable()
         {
             _dataMap = new Dictionary<string, float>();
-            OscMaster.messageDelegate += OnProcessMessage;
+            OscMaster.messageHandler.AddMessageMonitor(OnProcessMessage);
         }
 
         void OnDisable()
         {
-            OscMaster.messageDelegate -= OnProcessMessage;
+            OscMaster.messageHandler.RemoveMessageMonitor(OnProcessMessage);
         }
 
         void OnGUI()
         {
             EditorGUILayout.BeginVertical();
 
-            foreach (var pair in _dataMap)
-                EditorGUILayout.LabelField(pair.Key, pair.Value.ToString());
+            lock (_dataMap)
+                foreach (var pair in _dataMap)
+                    EditorGUILayout.LabelField(pair.Key, pair.Value.ToString());
 
             EditorGUILayout.EndVertical();
         }
 
         void Update()
         {
-            if (_updated)
-            {
+            if (_updated) {
                 Repaint();
                 _updated = false;
             }
@@ -71,7 +71,7 @@ namespace Klak.Osc
 
         void OnProcessMessage(string address, float data)
         {
-            _dataMap[address] = data;
+            lock (_dataMap) _dataMap[address] = data;
             _updated = true;
         }
     }

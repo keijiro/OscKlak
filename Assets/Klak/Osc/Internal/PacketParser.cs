@@ -23,15 +23,19 @@
 //
 using System;
 using System.Text;
+using System.Collections.Generic;
 
 namespace Klak.Osc
 {
     /// OSC packet parser
-    public class OscParser
+    public class PacketParser
     {
         #region Public Members
 
-        public OscCore.MessageDelegate messageDelegate { get; set; }
+        public PacketParser(MessageHandler handler)
+        {
+            _messageHandler = handler;
+        }
 
         public void ProcessPacket(Byte[] data, int length)
         {
@@ -48,6 +52,7 @@ namespace Klak.Osc
 
         #region Private Methods
 
+        MessageHandler _messageHandler;
         Byte[] _dataBuffer;
         int _dataLength;
         int _position;
@@ -75,11 +80,11 @@ namespace Klak.Osc
                 // read the first argument if exists
                 var arg = types.Length > 1 ? ReadArgument(types[1]) : 0.0f;
 
+                // invoke the callback with the retrieved argument
+                _messageHandler.ProcessMessage(address, arg);
+
                 // skip the rest of the arguments
                 _position = next;
-
-                // invoke the delegate with the retrieved argument
-                messageDelegate(address, arg);
             }
         }
 

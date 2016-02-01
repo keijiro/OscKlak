@@ -33,13 +33,14 @@ namespace Klak.Osc
     {
         #region Public Properties And Methods
 
-        public OscCore.MessageDelegate messageDelegate {
-            get { return _parser.messageDelegate; }
-            set { _parser.messageDelegate = value; }
+        public MessageHandler messageHandler {
+            get { return _messageHandler; }
         }
 
         public OscServer(int listenPort)
         {
+            _messageHandler = new MessageHandler();
+
             _socket = new Socket(
                 AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
@@ -49,9 +50,6 @@ namespace Klak.Osc
             _socket.ReceiveTimeout = 100;
 
             _socket.Bind(new IPEndPoint(IPAddress.Any, listenPort));
-
-            _buffer = new byte[65536];
-            _parser = new OscParser();
         }
 
         public void Start()
@@ -72,29 +70,30 @@ namespace Klak.Osc
             _socket.Close();
 
             _thread.Join();
+
+            _messageHandler = null;
         }
 
         #endregion
 
         #region Private Objects And Methods
 
-        bool _disposed;
-
+        MessageHandler _messageHandler;
         Socket _socket;
         Thread _thread;
-
-        OscParser _parser;
-        byte[] _buffer;
+        bool _disposed;
 
         void ServerLoop()
         {
+            var parser = new PacketParser(_messageHandler);
+            var buffer = new byte[65536];
+
             while (!_disposed)
             {
                 try {
-                    int dataRead = _socket.Receive(_buffer);
+                    int dataRead = _socket.Receive(buffer);
                     if (!_disposed && dataRead > 0)
-                        lock (_parser)
-                            _parser.ProcessPacket(_buffer, dataRead);
+                        parser.ProcessPacket(buffer, dataRead);
                 }
                 catch (SocketException) {
                     // It might exited by timeout. Nothing to do.

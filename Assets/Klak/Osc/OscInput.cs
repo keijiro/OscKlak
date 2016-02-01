@@ -45,7 +45,7 @@ namespace Klak.Osc
         #region Editable Properties
 
         [SerializeField]
-        string _path = "/1/pad1";
+        string _address = "/1/fader1";
 
         [SerializeField]
         AnimationCurve _inputCurve = AnimationCurve.Linear(0, 0, 1, 1);
@@ -78,6 +78,7 @@ namespace Klak.Osc
 
         #region Private Variables And Methods
 
+        string _registeredAddress;
         FloatInterpolator _value;
         float _lastInputValue;
 
@@ -87,9 +88,8 @@ namespace Klak.Osc
             return BasicMath.Lerp(_outputValue0, _outputValue1, p);
         }
 
-        void OnProcessMessage(string path, float data)
+        void OscDataCallback(float data)
         {
-            if (path != _path) return;
             UpdateState(data);
         }
 
@@ -111,12 +111,18 @@ namespace Klak.Osc
 
         void OnEnable()
         {
-            OscMaster.messageDelegate += OnProcessMessage;
+            if (!String.IsNullOrEmpty(_address))
+                OscMaster.messageHandler.
+                    AddDataCallback(_address, OscDataCallback);
+
+            _registeredAddress = _address;
         }
 
         void OnDisable()
         {
-            OscMaster.messageDelegate -= OnProcessMessage;
+            if (!String.IsNullOrEmpty(_registeredAddress))
+                OscMaster.messageHandler.
+                    RemoveDataCallback(_registeredAddress, OscDataCallback);
         }
 
         void Start()
@@ -128,6 +134,15 @@ namespace Klak.Osc
         {
             if (_eventType == EventType.Value)
                 _valueEvent.Invoke(_value.Step());
+
+            #if UNITY_EDITOR
+            // re-register the osc data callback
+            if (_address != _registeredAddress)
+            {
+                OnDisable();
+                OnEnable();
+            }
+            #endif
         }
 
         #endregion

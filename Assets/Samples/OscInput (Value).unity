@@ -346,7 +346,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ebd1ae8719f5f4ed1b7365c706aa8660, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _path: /1/push1
+  _address: /1/push1
   _inputCurve:
     serializedVersion: 2
     m_Curve:
@@ -650,7 +650,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ebd1ae8719f5f4ed1b7365c706aa8660, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _path: /1/fader2
+  _address: /1/fader2
   _inputCurve:
     serializedVersion: 2
     m_Curve:
@@ -768,7 +768,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ebd1ae8719f5f4ed1b7365c706aa8660, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _path: /1/fader1
+  _address: /1/fader1
   _inputCurve:
     serializedVersion: 2
     m_Curve:

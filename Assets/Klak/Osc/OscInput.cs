@@ -113,12 +113,7 @@ namespace Klak.Osc
                 _triggerThreshold >= inputValue;
         }
 
-        void OscDataCallback(float data)
-        {
-            UpdateState(data);
-        }
-
-        void UpdateState(float inputValue)
+        void OscDataCallback(float inputValue)
         {
             if (_eventType == EventType.Value)
             {
@@ -204,5 +199,18 @@ namespace Klak.Osc
         }
 
         #endregion
+
+        #if UNITY_EDITOR
+
+        #region Editor Interface
+
+        public float debugInput {
+            get { return _lastInputValue; }
+            set { OscDataCallback(value); }
+        }
+
+        #endregion
+
+        #endif
     }
 }

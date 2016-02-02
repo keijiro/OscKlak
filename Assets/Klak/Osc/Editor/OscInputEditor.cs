@@ -95,6 +95,15 @@ namespace Klak.Osc
                 EditorGUILayout.PropertyField(_valueEvent);
             }
 
+            if (EditorApplication.isPlaying &&
+                !serializedObject.isEditingMultipleObjects)
+            {
+                var instance = (OscInput)target;
+                instance.debugInput =
+                    EditorGUILayout.Slider("Debug", instance.debugInput, 0, 1);
+                EditorUtility.SetDirty(target); // request repaint
+            }
+
             serializedObject.ApplyModifiedProperties();
         }
     }

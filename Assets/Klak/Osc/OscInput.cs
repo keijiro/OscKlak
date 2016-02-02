@@ -209,6 +209,11 @@ namespace Klak.Osc
             set { OscDataCallback(value); }
         }
 
+        public void DebugTrigger()
+        {
+            _triggerEvent.Invoke();
+        }
+
         #endregion
 
         #endif

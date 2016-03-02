@@ -85,7 +85,8 @@ namespace Klak.Osc
                 if (_dataCallbackMap.TryGetValue(address, out callback))
                     callback(data);
 
-                _messageMonitor(address, data);
+                if (_messageMonitor != null)
+                    _messageMonitor(address, data);
             }
         }
 

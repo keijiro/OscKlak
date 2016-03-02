@@ -98,6 +98,13 @@ namespace Klak.Osc
                 catch (SocketException) {
                     // It might exited by timeout. Nothing to do.
                 }
+                catch (ThreadAbortException) {
+                    // Abort silently.
+                }
+                catch (Exception e) {
+                    if (!_disposed) UnityEngine.Debug.Log(e);
+                    break;
+                }
             }
         }
 

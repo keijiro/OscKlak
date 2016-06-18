@@ -31,33 +31,21 @@ namespace Klak.Osc
     public class OscInputEditor : Editor
     {
         SerializedProperty _address;
-        SerializedProperty _inputCurve;
-
-        SerializedProperty _eventType;
-        SerializedProperty _triggerType;
-        SerializedProperty _outputValue0;
-        SerializedProperty _outputValue1;
         SerializedProperty _interpolator;
 
-        SerializedProperty _triggerEvent;
-        SerializedProperty _gateOnEvent;
-        SerializedProperty _gateOffEvent;
+        SerializedProperty _bangEvent;
+        SerializedProperty _onEvent;
+        SerializedProperty _offEvent;
         SerializedProperty _valueEvent;
 
         void OnEnable()
         {
             _address = serializedObject.FindProperty("_address");
-            _inputCurve = serializedObject.FindProperty("_inputCurve");
-
-            _eventType = serializedObject.FindProperty("_eventType");
-            _triggerType = serializedObject.FindProperty("_triggerType");
-            _outputValue0 = serializedObject.FindProperty("_outputValue0");
-            _outputValue1 = serializedObject.FindProperty("_outputValue1");
             _interpolator = serializedObject.FindProperty("_interpolator");
 
-            _triggerEvent = serializedObject.FindProperty("_triggerEvent");
-            _gateOnEvent = serializedObject.FindProperty("_gateOnEvent");
-            _gateOffEvent = serializedObject.FindProperty("_gateOffEvent");
+            _bangEvent = serializedObject.FindProperty("_bangEvent");
+            _onEvent = serializedObject.FindProperty("_onEvent");
+            _offEvent = serializedObject.FindProperty("_offEvent");
             _valueEvent = serializedObject.FindProperty("_valueEvent");
         }
 
@@ -66,49 +54,29 @@ namespace Klak.Osc
             serializedObject.Update();
 
             EditorGUILayout.PropertyField(_address);
-            EditorGUILayout.PropertyField(_inputCurve);
 
             EditorGUILayout.Space();
 
-            var showAllOptions = _eventType.hasMultipleDifferentValues;
-            var eventType = (OscInput.EventType)_eventType.enumValueIndex;
+            EditorGUILayout.PropertyField(_interpolator);
 
-            EditorGUILayout.PropertyField(_eventType);
+            EditorGUILayout.Space();
 
-            if (showAllOptions || eventType == OscInput.EventType.Trigger)
-            {
-                EditorGUILayout.PropertyField(_triggerType);
-                EditorGUILayout.PropertyField(_triggerEvent);
-            }
-
-            if (showAllOptions || eventType == OscInput.EventType.Gate)
-            {
-                EditorGUILayout.PropertyField(_gateOnEvent);
-                EditorGUILayout.PropertyField(_gateOffEvent);
-            }
-
-            if (showAllOptions || eventType == OscInput.EventType.Value)
-            {
-                EditorGUILayout.PropertyField(_outputValue0);
-                EditorGUILayout.PropertyField(_outputValue1);
-                EditorGUILayout.PropertyField(_interpolator);
-                EditorGUILayout.PropertyField(_valueEvent);
-            }
+            EditorGUILayout.PropertyField(_bangEvent);
+            EditorGUILayout.PropertyField(_onEvent);
+            EditorGUILayout.PropertyField(_offEvent);
+            EditorGUILayout.PropertyField(_valueEvent);
 
             if (EditorApplication.isPlaying &&
                 !serializedObject.isEditingMultipleObjects)
             {
                 var instance = (OscInput)target;
-                if (eventType == OscInput.EventType.Trigger)
-                {
-                    if (GUILayout.Button("Debug")) instance.DebugTrigger();
-                }
-                else
-                {
-                    instance.debugInput = EditorGUILayout.
-                        Slider("Debug", instance.debugInput, 0, 1);
-                    EditorUtility.SetDirty(target); // request repaint
-                }
+
+                instance.debugInput = EditorGUILayout.
+                    Slider("Debug", instance.debugInput, 0, 1);
+
+                if (GUILayout.Button("Bang")) instance.DebugBang();
+
+                EditorUtility.SetDirty(target); // request repaint
             }
 
             serializedObject.ApplyModifiedProperties();

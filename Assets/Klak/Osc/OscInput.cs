@@ -22,69 +22,48 @@
 // THE SOFTWARE.
 //
 using UnityEngine;
-using UnityEngine.Events;
-using System;
 using System.Collections.Generic;
 using Klak.Math;
+using Klak.Wiring;
 
 namespace Klak.Osc
 {
-    [AddComponentMenu("Klak/OSC/OSC Input")]
-    public class OscInput : MonoBehaviour
+    [AddComponentMenu("Klak/Wiring/Input/OSC Input")]
+    public class OscInput : NodeBase
     {
-        #region Nested Public Classes
-
-        public enum EventType { Trigger, Gate, Value }
-
-        public enum TriggerType { Bang, Threshold }
-
-        [Serializable]
-        public class ValueEvent : UnityEvent<float> {}
-
-        #endregion
-
-        #region Editable Properties
+        #region Editable properties
 
         [SerializeField]
         string _address = "/1/fader1";
 
         [SerializeField]
-        AnimationCurve _inputCurve = AnimationCurve.Linear(0, 0, 1, 1);
-
-        [SerializeField]
-        EventType _eventType = EventType.Value;
-
-        [SerializeField]
-        TriggerType _triggerType = TriggerType.Threshold;
-
-        [SerializeField]
-        float _outputValue0 = 0.0f;
-
-        [SerializeField]
-        float _outputValue1 = 1.0f;
-
-        [SerializeField]
-        FloatInterpolator.Config _interpolator;
-
-        [SerializeField]
-        UnityEvent _triggerEvent;
-
-        [SerializeField]
-        UnityEvent _gateOnEvent;
-
-        [SerializeField]
-        UnityEvent _gateOffEvent;
-
-        [SerializeField]
-        ValueEvent _valueEvent;
+        FloatInterpolator.Config _interpolator = new FloatInterpolator.Config(
+            FloatInterpolator.Config.InterpolationType.DampedSpring, 30
+        );
 
         #endregion
 
-        #region Private Variables And Methods
+        #region Node I/O
 
-        enum EventRecord { Trigger, GateOn, GateOff }
+        [SerializeField, Outlet]
+        VoidEvent _bangEvent = new VoidEvent();
 
-        const float _triggerThreshold = 0.5f;
+        [SerializeField, Outlet]
+        VoidEvent _onEvent = new VoidEvent();
+
+        [SerializeField, Outlet]
+        VoidEvent _offEvent = new VoidEvent();
+
+        [SerializeField, Outlet]
+        FloatEvent _valueEvent = new FloatEvent();
+
+        #endregion
+
+        #region Private members
+
+        enum EventRecord { Bang, On, Off }
+
+        const float _threshold = 0.5f;
 
         string _registeredAddress;
 
@@ -93,75 +72,49 @@ namespace Klak.Osc
         FloatInterpolator _value;
         float _lastInputValue;
 
-        float CalculateTargetValue(float inputValue)
-        {
-            var p = _inputCurve.Evaluate(inputValue);
-            return BasicMath.Lerp(_outputValue0, _outputValue1, p);
-        }
-
         bool CheckUpTrigger(float inputValue)
         {
             return
-                _triggerThreshold >= _lastInputValue &&
-                _triggerThreshold < inputValue;
+                _threshold >= _lastInputValue && _threshold < inputValue;
         }
 
         bool CheckDownTrigger(float inputValue)
         {
             return
-                _triggerThreshold < _lastInputValue &&
-                _triggerThreshold >= inputValue;
+                _threshold < _lastInputValue && _threshold >= inputValue;
         }
 
         void OscDataCallback(float inputValue)
         {
-            if (_eventType == EventType.Value)
-            {
-                _value.targetValue = CalculateTargetValue(inputValue);
-            }
-            else if (_eventType == EventType.Trigger)
-            {
-                if (_triggerType == TriggerType.Bang || CheckUpTrigger(inputValue))
-                {
-                    lock (_eventQueue) _eventQueue.Enqueue(EventRecord.Trigger);
-                }
-            }
-            else // EventType.Gate
-            {
-                if (CheckUpTrigger(inputValue))
-                {
-                    lock (_eventQueue) _eventQueue.Enqueue(EventRecord.GateOn);
-                }
-                else if (CheckDownTrigger(inputValue))
-                {
-                    lock (_eventQueue) _eventQueue.Enqueue(EventRecord.GateOff);
-                }
-            }
+            _value.targetValue = inputValue;
+
+            lock (_eventQueue) _eventQueue.Enqueue(EventRecord.Bang);
+
+            if (CheckUpTrigger(inputValue))
+                lock (_eventQueue) _eventQueue.Enqueue(EventRecord.On);
+            else if (CheckDownTrigger(inputValue))
+                lock (_eventQueue) _eventQueue.Enqueue(EventRecord.Off);
 
             _lastInputValue = inputValue;
         }
 
         #endregion
 
-        #region MonoBehaviour Functions
+        #region MonoBehaviour functions
 
         void OnEnable()
         {
-            // register the osc data callback
-            if (!String.IsNullOrEmpty(_address))
-                OscMaster.messageHandler.
-                    AddDataCallback(_address, OscDataCallback);
-
+            // Register the OSC data callback.
+            if (!string.IsNullOrEmpty(_address))
+                OscMaster.messageHandler.AddDataCallback(_address, OscDataCallback);
             _registeredAddress = _address;
         }
 
         void OnDisable()
         {
-            // unregister the osc data callback
-            if (!String.IsNullOrEmpty(_registeredAddress))
-                OscMaster.messageHandler.
-                    RemoveDataCallback(_registeredAddress, OscDataCallback);
-
+            // Unregister the OSC data callback.
+            if (!string.IsNullOrEmpty(_registeredAddress))
+                OscMaster.messageHandler.RemoveDataCallback(_registeredAddress, OscDataCallback);
             _registeredAddress = null;
         }
 
@@ -173,24 +126,22 @@ namespace Klak.Osc
 
         void Update()
         {
-            // invoke events in the queue
+            // Invoke events in the queue.
             lock (_eventQueue)
                 while (_eventQueue.Count > 0)
                     switch (_eventQueue.Dequeue()) {
-                        case EventRecord.Trigger: _triggerEvent.Invoke(); break;
-                        case EventRecord.GateOn:  _gateOnEvent. Invoke(); break;
-                        case EventRecord.GateOff: _gateOffEvent.Invoke(); break;
+                        case EventRecord.Bang: _bangEvent.Invoke(); break;
+                        case EventRecord.On:   _onEvent.  Invoke(); break;
+                        case EventRecord.Off:  _offEvent. Invoke(); break;
                     }
 
-            // value interpolation and invokation
-            if (_eventType == EventType.Value)
-                _valueEvent.Invoke(_value.Step());
+            // Value interpolation and invokation.
+            _valueEvent.Invoke(_value.Step());
 
             #if UNITY_EDITOR
 
-            // re-register the osc data callback if the address was changed
-            if (_address != _registeredAddress)
-            {
+            // Re-register the osc data callback if the address was changed.
+            if (_address != _registeredAddress) {
                 OnDisable();
                 OnEnable();
             }
@@ -209,9 +160,9 @@ namespace Klak.Osc
             set { OscDataCallback(value); }
         }
 
-        public void DebugTrigger()
+        public void DebugBang()
         {
-            _triggerEvent.Invoke();
+            _bangEvent.Invoke();
         }
 
         #endregion

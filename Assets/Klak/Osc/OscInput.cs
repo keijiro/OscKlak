@@ -102,6 +102,12 @@ namespace Klak.Osc
 
         #region MonoBehaviour functions
 
+        void Awake()
+        {
+            _value = new FloatInterpolator(0, _interpolator);
+            _eventQueue = new Queue<EventRecord>();
+        }
+
         void OnEnable()
         {
             // Register the OSC data callback.
@@ -116,12 +122,6 @@ namespace Klak.Osc
             if (!string.IsNullOrEmpty(_registeredAddress))
                 OscMaster.messageHandler.RemoveDataCallback(_registeredAddress, OscDataCallback);
             _registeredAddress = null;
-        }
-
-        void Start()
-        {
-            _value = new FloatInterpolator(0, _interpolator);
-            _eventQueue = new Queue<EventRecord>();
         }
 
         void Update()
